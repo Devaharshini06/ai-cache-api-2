@@ -16,6 +16,10 @@ def create_app():
     from backend.routes.admin import admin_bp
     app.register_blueprint(admin_bp, url_prefix="/admin")
 
+    from backend.routes.company import company_bp
+    app.register_blueprint(company_bp, url_prefix="/company")
+
+
     with app.app_context():
         db.create_all()
 
