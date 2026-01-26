@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, app
 from flask_jwt_extended import JWTManager
 from backend.config import Config
 from backend.models import db
@@ -12,6 +12,9 @@ def create_app():
     JWTManager(app)
 
     app.register_blueprint(auth_bp, url_prefix="/auth")
+    
+    from backend.routes.admin import admin_bp
+    app.register_blueprint(admin_bp, url_prefix="/admin")
 
     with app.app_context():
         db.create_all()

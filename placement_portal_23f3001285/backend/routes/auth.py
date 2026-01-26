@@ -69,7 +69,8 @@ def login():
         return jsonify({"message": "Account deactivated"}), 403
 
     access_token = create_access_token(
-        identity={"id": user.id, "role": user.role}
+        identity=str(user.id),              # MUST be string
+        additional_claims={"role": user.role}
     )
 
     return jsonify({
