@@ -102,3 +102,28 @@ def deactivate_user(user_id):
     db.session.commit()
     return jsonify({"message": "User deactivated"})
 
+@admin_bp.route("/user/<int:user_id>/activate", methods=["PUT"])
+@jwt_required()
+@admin_required
+def activate_user(user_id):
+    user = User.query.get_or_404(user_id)
+    user.is_active = True
+    db.session.commit()
+    return jsonify({"message": "User activated"})
+
+@admin_bp.route("/applications", methods=["GET"])
+@jwt_required()
+@admin_required
+def view_all_applications():
+    applications = Application.query.all()
+
+    return jsonify([
+        {
+            "application_id": a.id,
+            "student_id": a.student_id,
+            "job_id": a.job_id,
+            "status": a.status
+        }
+        for a in applications
+    ])
+

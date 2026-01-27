@@ -1,7 +1,8 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from backend.models import db, Company, JobPosition, Application, Student
+from backend.models import Placement, db, Company, JobPosition, Application, Student
 from backend.routes.utils import company_required
+from datetime import date
 
 company_bp = Blueprint("company", __name__)
 
@@ -110,7 +111,34 @@ def update_application_status(application_id):
         return jsonify({"message": "Unauthorized"}), 403
 
     data = request.json
-    application.status = data.get("status")
+    ALLOWED_TRANSITIONS = {
+        "Applied": ["Shortlisted", "Rejected"],
+        "Shortlisted": ["Interview", "Rejected"],
+        "Interview": ["Selected", "Rejected"],
+        "Selected": [],
+        "Rejected": []
+    }
+
+    new_status = data.get("status")
+    
+    if application.status is None:
+        application.status = "Applied"
+ 
+    if new_status not in ALLOWED_TRANSITIONS.get(application.status, []):
+        return jsonify({"message": "Invalid status transition"}), 400
+
+    application.status = new_status
+
+    if new_status == "Selected":
+        placement = Placement(
+            application_id=application.id,
+            company_id=job.company_id,
+            student_id=application.student_id,
+            position=job.title,
+            salary=job.salary,
+            joining_date=date.today()
+        )
+        db.session.add(placement)
 
     db.session.commit()
     return jsonify({"message": "Application status updated"})
