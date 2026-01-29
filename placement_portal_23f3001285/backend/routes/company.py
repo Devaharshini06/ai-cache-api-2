@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend.models import Placement, db, Company, JobPosition, Application, Student
 from backend.routes.utils import company_required
+from backend.cache import redis_client
 from datetime import date
 
 company_bp = Blueprint("company", __name__)
@@ -128,7 +129,7 @@ def update_application_status(application_id):
         return jsonify({"message": "Invalid status transition"}), 400
 
     application.status = new_status
-
+    redis_client.delete("admin_applications")
     if new_status == "Selected":
         placement = Placement(
             application_id=application.id,

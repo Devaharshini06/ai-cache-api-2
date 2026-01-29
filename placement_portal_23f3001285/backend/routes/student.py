@@ -3,6 +3,8 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend.models import db, Student, JobPosition, Application, Placement
 from backend.routes.utils import student_required
 from backend.tasks.exports import export_applications_csv
+from backend.cache import redis_client
+import json
 
 student_bp = Blueprint("student", __name__)
 
@@ -10,9 +12,15 @@ student_bp = Blueprint("student", __name__)
 @jwt_required()
 @student_required
 def view_jobs():
+    cache_key = "approved_jobs"
+
+    cached = redis_client.get(cache_key)
+    if cached:
+        return jsonify(json.loads(cached))
+
     jobs = JobPosition.query.filter_by(status="Approved").all()
 
-    return jsonify([
+    data = [
         {
             "job_id": j.id,
             "title": j.title,
@@ -21,7 +29,10 @@ def view_jobs():
             "skills_required": j.skills_required
         }
         for j in jobs
-    ])
+    ]
+
+    redis_client.setex(cache_key, 300, json.dumps(data))  # 5 min TTL
+    return jsonify(data)
 
 
 @student_bp.route("/jobs/<int:job_id>/apply", methods=["POST"])
